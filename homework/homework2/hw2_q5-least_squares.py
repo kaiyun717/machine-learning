@@ -91,7 +91,3 @@ if __name__ == "__main__":
     title_d = "y_train VS y_fresh\n" \
               "CS 189 - Homework 1, Q5(d)"
     plot_training_errors(x=x_train, y_list=[y_train, y_fresh], title=title_d)
-
-    # print("y_tra in      |   y_fresh")
-    # for i in range(len(y_fresh)):
-    #     print(f"{y_train[i]}   {y_fresh[i]}")
