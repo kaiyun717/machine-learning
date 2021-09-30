@@ -19,7 +19,7 @@ def partial_derivative_approx(func, a, index, eps=1e-5):
 
     partial_approx = (a_1_out - a_2_out) / (2*eps)
 
-    return partial_approx[index]
+    return partial_approx
 
 
 # Should implement this with Numpy and get rid of the `for-loop`.
