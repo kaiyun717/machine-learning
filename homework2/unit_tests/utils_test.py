@@ -1,12 +1,13 @@
+import pickle
 import unittest
-
+import os
 import numpy as np
 
 from homework2.feed_forward import *
-from homework2.finite_difference import finite_difference
+from homework2.finite_difference import finite_difference, nn_finite_difference_checker
 
 
-class TestFiniteDifference(unittest.TestCase):
+class NNFiniteDifferenceChecker(unittest.TestCase):
     @staticmethod
     def dummy_func(x):
         y = 0.1 * x[0] ** 5 - 0.2 * x[1] ** 3 + 13 * x[2] + 6
@@ -23,18 +24,17 @@ class TestFiniteDifference(unittest.TestCase):
         all_close = np.allclose(self.dummy_func_dev(test_array), finite_difference(func=self.dummy_func, a=test_array))
         self.assertEqual(True, all_close)
 
+    def test_nn_finite_difference_checker(self):
+        test_data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data",
+                                                      "test_batch_weights_biases.pkl"))
+        with open(test_data_path, "rb") as fn:
+            (X_batch, y_batch, weight_matrices, biases) = pickle.load(fn)
 
-class TestFeedForwardFunctions(unittest.TestCase):
+        print(X_batch.shape)
+        print(y_batch.shape)
+        print(len(weight_matrices))
+        for l in weight_matrices:
+            print(l.shape)
 
-    def test_sigmoid_activation(self):
-
-        pass
-
-    def test_logistic_loss(self):
-        pass
-
-    def test_relu_activation(self):
-        pass
-
-    def test_layer_forward(self):
-        pass
+        activations = ["relu", "sigmoid"]
+        nn_finite_difference_checker(X_batch, y_batch, weight_matrices, biases, activations)
