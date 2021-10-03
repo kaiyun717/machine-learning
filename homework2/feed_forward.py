@@ -1,31 +1,25 @@
+"""
+UC Berkeley CS 189 - Homework 2
+Part 1.2(b)
+Functions needed to implement the feed-forward part of training / testing.
+    - logistic loss
+    - sigmoid activation
+    - relu activation
+    - layer forward
+
+Author: Kai Yun (kaiyun799@berkeley.edu)
+"""
 import numpy as np
-
-
-def sigmoid_activation(input: np.array, eps: float = 1e-15):
-    """
-
-    :param input:
-    :param eps:
-    :return:
-        - output: output of the sigmoid function given the input, element-wise
-        - gradient: d_sigmoid = sigmoid * (1 - sigmoid), element-wise
-    """
-    output = np.where(input < 0,
-                      np.exp(input, where=input < 0) / (1 + np.exp(input, where=input < 0)),
-                      np.reciprocal(1 + np.exp(-input, where=input > 0)))
-    output = np.clip(output, eps, 1 - eps)
-
-    gradient = np.multiply(output, 1 - output)
-
-    return output, gradient
 
 
 def logistic_loss(g: np.array, y: np.array):
     """
-
-    :param g:
-    :param y:
-    :return:
+    Implementation of logistic loss function; element-wise calculation.
+        Loss = - log(g[i] ^ y[i] * (1 - g[i]) ^ (1 - y[i]))
+        dL_dg = - y[i] / g[i] + (1 - y[i]) / (1 - g[i])
+    :param g: Estimated values of y.
+    :param y: True y values.
+    :return: Loss and dL_dg (gradients of loss values) as defined above.
     """
     assert g.shape == y.shape, "Array of the outputs of the neural network and " \
                                "array of the true labels do not have the same shape."
@@ -42,12 +36,36 @@ def logistic_loss(g: np.array, y: np.array):
 
 def relu_activation(input: np.array):
     """
-
-    :param input:
-    :return:
+    Relu activation function; element-wise calculation.
+        Relu(x) = max(0, x)
+        gradient(Relu(x)) = 1 if x > 0 and 0 otherwise
+    :param input: `np.array` of x values
+    :return: `np.array` of Relu(x) values and their gradients.
     """
     output = np.maximum(input, 0)
     gradient = (output > 0) * 1
+
+    return output, gradient
+
+
+def sigmoid_activation(input: np.array, eps: float = 1e-15):
+    """
+    Sigmoid activation function; element-wise calculation. Depending on the input value,
+    difference forms are used.
+        - If x < 0, sig(x) = e^x / (1 + e^x)
+        - otherwise, sig(x) = 1 / (1 + e^-x)
+    :param input: `np.array` of x values.
+    :param eps: To avoid floating point limitations, clip the sigmoid values to (eps, 1 - eps).
+    :return:
+        - output: output of the sigmoid function given the input, element-wise
+        - gradient: d_sigmoid = sigmoid * (1 - sigmoid), element-wise
+    """
+    output = np.where(input < 0,
+                      np.exp(input, where=input < 0) / (1 + np.exp(input, where=input < 0)),
+                      np.reciprocal(1 + np.exp(-input, where=input > 0)))
+    output = np.clip(output, eps, 1 - eps)
+
+    gradient = np.multiply(output, 1 - output)
 
     return output, gradient
 
@@ -58,10 +76,10 @@ def layer_forward(x, W, b, activation_fn):
     :param x: n x d(l-1) dimensional matrix consisting of the mini-batch neurons for layer l-1
     :param W: d(l-1) x d(l) weight matrix for layer l
     :param b: 1 x d(l) dimensional basis vector for layer l
-    :param activation_fn: activation function (element-wise); Sigmoid or ReLU
+    :param activation_fn: Activation function (element-wise); Sigmoid or ReLU
     :return:
-        - out
-        - cache
+        - out: Output values (between (0, 1)) for each data set.
+        - cache: Values needed for back-propagation.
     """
     assert x.shape[1] == W.shape[0], f"Number of columns of matrix x, {x.shape[1]}, does not match" \
                                      f"the number of rows of matrix W, {W.shape[0]}."
@@ -84,8 +102,6 @@ def layer_forward(x, W, b, activation_fn):
         f"{n} x {d_curr}. However, its shape is {neuron_matrix.shape}."
 
     out, neuron_activation_gradient = activation_fn(input=neuron_matrix)
-    xW_activation, xW_activation_gradient = activation_fn(input=xW)
-    b_activation, b_activation_gradient = activation_fn(input=b)
 
     cache = (x, W, neuron_activation_gradient)
 

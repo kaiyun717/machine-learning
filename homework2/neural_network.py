@@ -1,3 +1,12 @@
+"""
+UC Berkeley CS 189 - Homework 2
+Part 1.2(c), (d), (e)
+Implementation of fully-connected multi-layer perception neural network,
+and its forward_pass and backward_pass methods.
+Finally, the overall training procedure.
+
+Author: Kai Yun (kaiyun799@berkeley.edu)
+"""
 import copy
 
 import numpy as np
@@ -13,6 +22,19 @@ def loss_fn(y_estimate, y_batch, name="logistic"):
 
 
 def forward_pass(X_batch, weight_matrices, biases, activations):
+    """
+    Forward pass through a neural network given input data, weight matrices, biases,
+    and activation function names for each layer.
+    :param X_batch: Input data to go into the first layer.
+    :param weight_matrices: The gist of neural network, the list of weights for each layer.
+                            aka, the neural network itself.
+    :param biases: List of biases for each layer.
+    :param activations: Name of activation functions for each layer.
+    :return:
+        - output: The final output values for each data set in an `np.array` datatype.
+        - layer_caches: List of caches from the forward-pass through each layer.
+                        These are used in the back-propagation.
+    """
     layer_caches = []
 
     nn_depth = len(weight_matrices)
@@ -35,11 +57,14 @@ def forward_pass(X_batch, weight_matrices, biases, activations):
 
 def backward_pass(dL_dg, layer_caches):
     """
-
-    :param dL_dg:
+    Implementation of the back-propagation algorithm to calculate the gradients of the
+    weight matrices and the biases.
+    :param dL_dg: Gradient of the loss function.
     :param layer_caches: length should be `self.nn_depth`.
             (x, W, neuron_matrix_gradient)
     :return:
+        - dL_dw: List of matrices of gradient of loss w.r.t. each weight.
+        - dL_db: List of vectors of gradient of loss w.r.t. each bias.
     """
     dL_dg = np.array(dL_dg, dtype=np.float64).reshape((len(dL_dg), 1))
     L = len(layer_caches) - 1  # Final layer (output) index
@@ -82,9 +107,9 @@ class FullyConnectedMLP:
 
     def create_weight_matrices(self, layer_dims):
         """
-
-        :param layer_dims:
-        :return: list of weights; each index has a Numpy matrix of weights.
+        Creates weight matrices and returns the list of them given the layer dimensions.
+        :param layer_dims: List of layer dimensions for each weight matrix.
+        :return: list of weight matrices; each index has a Numpy matrix of weights.
         """
         weights = []
         for layer in range(len(layer_dims) - 1):
@@ -97,9 +122,9 @@ class FullyConnectedMLP:
 
     def create_bias_vectors(self, layer_dims):
         """
-
-        :param layer_dims:
-        :return: list of biases; each index has a Numpy vector of biases.
+        Creates bias vectors given the layer dimensions.
+        :param layer_dims: List of layer dimensions for each weight matrix.
+        :return: list of bias vectors; each index has a Numpy vector of biases.
         """
         biases = []
         for layer in range(len(layer_dims) - 1):
@@ -134,12 +159,27 @@ class FullyConnectedMLP:
         return loss, dl_dg
 
     def train(self, X_train, y_train, X_test, y_test, mini_batch_size=100, learning_rate=0.1, epoch=5):
+        """
+        Implementation of the overall training procedure for the neural network.
+        :param X_train: Training input dataset.
+        :param y_train: Training true labels.
+        :param X_test: Testing input dataset.
+        :param y_test: Testing true labels.
+        :param mini_batch_size: Size of mini batch for Stochastic Gradient Descent (SGD), i.e. each iteration.
+        :param learning_rate: learning rate, i.e., "step size", for SGD.
+        :param epoch: Number of epoch, i.e., the number of loops over the entire dataset.
+        :return:
+            - average_train_losses
+            - average_train_accuracy
+            - average_test_losses
+            - average_test_accuracy
+        """
         average_train_losses = []
         average_train_accuracy = []
         average_test_losses = []
         average_test_accuracy = []
 
-        for i in range(epoch + 1):
+        for _ in range(epoch):
             X_train_pre_shuffle = copy.deepcopy(X_train)
             y_train_pre_shuffle = copy.deepcopy(y_train)
             assert X_train_pre_shuffle.shape[0] == y_train_pre_shuffle.shape[0]
