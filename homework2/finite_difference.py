@@ -37,9 +37,10 @@ def finite_difference(func, a, eps=1e-5):
 def nn_finite_difference_checker(X_batch, y_batch, weight_matrices, biases, activations, eps=1e-5):
     y_batch = np.reshape(y_batch, (y_batch.shape[0], 1))
     L = len(weight_matrices)    # number of weight matrices
+    B = len(biases)             # number of bias vectors
 
     weight_diff = copy.deepcopy(weight_matrices)
-    # biases_diff = np.copy(biases)
+    biases_diff = copy.deepcopy(biases)
 
     for l in range(L):
         weight_matrix = weight_matrices[l]
@@ -58,15 +59,30 @@ def nn_finite_difference_checker(X_batch, y_batch, weight_matrices, biases, acti
                 minus_output, _ = forward_pass(X_batch=X_batch, weight_matrices=weight_matrices_minus,
                                                biases=biases, activations=activations)
 
-                print(plus_output)
-                print(minus_output)
-
                 plus_loss, _ = loss_fn(y_estimate=plus_output, y_batch=y_batch)
                 minus_loss, _ = loss_fn(y_estimate=minus_output, y_batch=y_batch)
 
                 weight_diff[l][n][w] = (plus_loss.mean() - minus_loss.mean()) / (2*eps)
+                print(f"{(l+1)*(n+1)*(w+1)}-th weight's finite difference calculating!")
 
+    for l in range(B):
+        bias_vector = biases[l].T
+        num_biases = bias_vector.shape[0]
+        for b in range(num_biases):
+            bias_vector_plus = copy.deepcopy(biases)
+            bias_vector_minus = copy.deepcopy(biases)
+            np.transpose(bias_vector_plus[l])[b] += eps
+            np.transpose(bias_vector_minus[l])[b] -= eps
 
-    print(weight_diff)
+            plus_output, _ = forward_pass(X_batch=X_batch, weight_matrices=weight_matrices,
+                                          biases=bias_vector_plus, activations=activations)
+            minus_output, _ = forward_pass(X_batch=X_batch, weight_matrices=weight_matrices,
+                                           biases=bias_vector_minus, activations=activations)
 
+            plus_loss, _ = loss_fn(y_estimate=plus_output, y_batch=y_batch)
+            minus_loss, _ = loss_fn(y_estimate=minus_output, y_batch=y_batch)
 
+            np.transpose(biases_diff[l])[b] = (plus_loss.mean() - minus_loss.mean()) / (2*eps)
+            print(f"{(l+1)*(b+1)}-th bias's finite difference calculating!")
+
+    return weight_diff, biases_diff

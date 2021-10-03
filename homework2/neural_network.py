@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 
 from homework2.feed_forward import sigmoid_activation, relu_activation, layer_forward, logistic_loss
@@ -26,6 +28,7 @@ def forward_pass(X_batch, weight_matrices, biases, activations):
 
         X_batch, caches = layer_forward(x=X_batch, W=W, b=b, activation_fn=activation_fn)
         layer_caches.append(caches)
+
     output = X_batch
     return output, layer_caches
 
@@ -35,39 +38,27 @@ def backward_pass(dL_dg, layer_caches):
 
     :param dL_dg:
     :param layer_caches: length should be `self.nn_depth`.
+            (x, W, neuron_matrix_gradient)
     :return:
     """
     dL_dg = np.array(dL_dg, dtype=np.float64).reshape((len(dL_dg), 1))
-    # print(f"Shape of dL_dg: {dL_dg.shape} (This is the loss vector: len = n)")
-    # print(f"Number of weight matrices: {len(self.weight_matrices)}")
-    # for i in range(len(self.weight_matrices)):
-    #     print(f"Shape of weight matrix {i}: {self.weight_matrices[i].shape}")
-    #
-    # print(f"Number of layer caches: {len(layer_caches)}")
-    # for i in range(len(layer_caches)):
-    #     print(f"Shape of layer {i} xW_activation: {layer_caches[i][2].shape}")
-    #     print(f"Shape of layer {i} xW_activation_gradient: {layer_caches[i][3].shape}")
-    #     print(f"Shape of layer {i} b_activation: {layer_caches[i][4].shape}")
-    #     print(f"Shape of layer {i} b_activation_gradient: {layer_caches[i][5].shape}")
-
     L = len(layer_caches) - 1  # Final layer (output) index
-    print(f"L: {L}")
+
     dL_dw = []
     delta_next_weights = np.einsum('ij,ij->ij', dL_dg, layer_caches[L][2])
-    dL_dw_final = np.dot(layer_caches[L][0].T, delta_next_weights)
+    dL_dw_final = np.dot(layer_caches[L][0].T, delta_next_weights) / layer_caches[L][0].shape[0]
     dL_dw.insert(0, dL_dw_final)
 
     dL_db = []
-    # delta_next_bias =
+    dL_db.insert(0, delta_next_weights.mean(axis=0))
 
     for l in range(L - 1, -1, -1):
-        delta_next_weights = np.einsum("ij,ij->ij", np.dot(delta_next_weights, layer_caches[l + 1][1].T),
+        delta_next_weights = np.einsum("ij,ij->ij",
+                                       np.dot(delta_next_weights, layer_caches[l + 1][1].T),
                                        layer_caches[l][2])
-        dL_dw_l = np.dot(layer_caches[l][0].T, delta_next_weights)
+        dL_dw_l = np.dot(layer_caches[l][0].T, delta_next_weights) / layer_caches[L][0].shape[0]
         dL_dw.insert(0, dL_dw_l)
-
-    for dd in dL_dw:
-        print(dd.shape)
+        dL_db.insert(0, delta_next_weights.mean(axis=0))
 
     return dL_dw, dL_db
 
@@ -118,11 +109,18 @@ class FullyConnectedMLP:
 
         return biases
 
+    def return_weight_matrices(self):
+        return self.weight_matrices
+
+    def return_bias_vectors(self):
+        return self.bias_vectors
+
     def nn_forward_pass(self, X_batch):
         output, layer_caches = forward_pass(X_batch=X_batch,
                                             weight_matrices=self.weight_matrices,
                                             biases=self.bias_vectors,
                                             activations=self.activations)
+
         return output, layer_caches
 
     def nn_backward_pass(self, dL_dg, layer_caches):
@@ -135,5 +133,56 @@ class FullyConnectedMLP:
         loss, dl_dg = loss_fn(g=y_estimate, y=y_batch)
         return loss, dl_dg
 
-    def train(self):
-        pass
+    def train(self, X_train, y_train, X_test, y_test, mini_batch_size=100, learning_rate=0.1, epoch=5):
+        average_train_losses = []
+        average_train_accuracy = []
+        average_test_losses = []
+        average_test_accuracy = []
+
+        for i in range(epoch + 1):
+            X_train_pre_shuffle = copy.deepcopy(X_train)
+            y_train_pre_shuffle = copy.deepcopy(y_train)
+            assert X_train_pre_shuffle.shape[0] == y_train_pre_shuffle.shape[0]
+
+            shuffle_seq = np.random.permutation(len(X_train_pre_shuffle))
+            X_train_shuffle = X_train_pre_shuffle[shuffle_seq]
+            y_train_shuffle = y_train_pre_shuffle[shuffle_seq]
+
+            X_train_shuffle_list = [X_train_shuffle[i: i + mini_batch_size] for i in range(0, X_train_shuffle.shape[0], 100)]
+            y_train_shuffle_list = [y_train_shuffle[i: i + mini_batch_size] for i in range(0, y_train_shuffle.shape[0], 100)]
+
+            for i in range(len(X_train_shuffle_list)):
+                # === Train ===
+                output, layer_caches = self.nn_forward_pass(X_batch=X_train_shuffle_list[i])
+                y_train_estimate = np.reshape(output, (y_train_shuffle_list[i].shape[0]))
+
+                loss, dl_dg = self.nn_loss_fn(y_estimate=y_train_estimate, y_batch=y_train_shuffle_list[i])
+                average_train_losses.append(loss.mean())
+
+                y_train_estimate_logit = (y_train_estimate > 0.5).astype(int)
+                average_train_acc \
+                    = np.sum(np.equal(y_train_estimate_logit, y_train_shuffle_list[i])) / y_train_shuffle_list[i].shape[0]
+                average_train_accuracy.append(average_train_acc)
+
+                # === Test ===
+                output_test, _ = self.nn_forward_pass(X_batch=X_test)
+                y_test_estimate = np.reshape(output_test, (y_test.shape[0]))
+
+                loss_test, _ = self.nn_loss_fn(y_estimate=y_test_estimate, y_batch=y_test)
+                average_test_losses.append(loss_test.mean())
+
+                y_test_estimate_logit = (y_test_estimate > 0.5).astype(int)
+                average_test_acc = np.sum(np.equal(y_test_estimate_logit, y_test)) / y_test.shape[0] * 100
+                average_test_accuracy.append(average_test_acc)
+
+                # === Train ===
+                dL_dw, dL_db = self.nn_backward_pass(dL_dg=dl_dg, layer_caches=layer_caches)
+                self.weight_matrices = [self.weight_matrices[i] - learning_rate * dL_dw[i]
+                                        for i in range(len(self.weight_matrices))]
+                self.bias_vectors = [self.bias_vectors[i] - learning_rate * dL_db[i]
+                                     for i in range(len(self.bias_vectors))]
+
+        return average_train_losses, average_test_losses, average_train_accuracy, average_test_accuracy
+
+
+

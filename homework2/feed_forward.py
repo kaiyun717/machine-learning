@@ -87,7 +87,6 @@ def layer_forward(x, W, b, activation_fn):
     xW_activation, xW_activation_gradient = activation_fn(input=xW)
     b_activation, b_activation_gradient = activation_fn(input=b)
 
-    cache = (x, W, xW_activation_gradient,
-             b, b_activation_gradient)
+    cache = (x, W, neuron_activation_gradient)
 
     return out, cache
