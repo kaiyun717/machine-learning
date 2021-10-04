@@ -188,8 +188,10 @@ class FullyConnectedMLP:
             X_train_shuffle = X_train_pre_shuffle[shuffle_seq]
             y_train_shuffle = y_train_pre_shuffle[shuffle_seq]
 
-            X_train_shuffle_list = [X_train_shuffle[i: i + mini_batch_size] for i in range(0, X_train_shuffle.shape[0], 100)]
-            y_train_shuffle_list = [y_train_shuffle[i: i + mini_batch_size] for i in range(0, y_train_shuffle.shape[0], 100)]
+            X_train_shuffle_list = [X_train_shuffle[i: i + mini_batch_size]
+                                    for i in range(0, X_train_shuffle.shape[0], 100)]
+            y_train_shuffle_list = [y_train_shuffle[i: i + mini_batch_size]
+                                    for i in range(0, y_train_shuffle.shape[0], 100)]
 
             for i in range(len(X_train_shuffle_list)):
                 # === Train ===
@@ -201,7 +203,7 @@ class FullyConnectedMLP:
 
                 y_train_estimate_logit = (y_train_estimate > 0.5).astype(int)
                 average_train_acc \
-                    = np.sum(np.equal(y_train_estimate_logit, y_train_shuffle_list[i])) / y_train_shuffle_list[i].shape[0]
+                    = np.sum(np.equal(y_train_estimate_logit, y_train_shuffle_list[i])) / y_train_shuffle_list[i].shape[0] * 100
                 average_train_accuracy.append(average_train_acc)
 
                 # === Test ===
